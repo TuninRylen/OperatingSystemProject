@@ -178,3 +178,143 @@ void pipeFonk(char *args[], char *komut, char *parametre) {
         perror("İkinci proses beklenirken hata oluştu");
     }
 }
+
+// Komutları ayırır ve uygun işlemi gerçekleştirir
+int komutYorumla(char *args[])
+{
+    char *commands[SPLIT];
+    int commandCount = 0;
+
+    // Noktalı virgül ile ayrılmış komutları ayır
+    char *command = strtok(args[0], ";");
+    while (command != NULL) {
+        commands[commandCount++] = command;
+        command = strtok(NULL, ";");
+    }
+
+    for (int i = 0; i < commandCount; i++) {
+        char *tokens[LIMIT];
+        int tokenCount = 0;
+
+        // Komutları boşluklarla ayır
+        tokens[tokenCount++] = strtok(commands[i], " \n\t");
+        while ((tokens[tokenCount] = strtok(NULL, " \n\t")) != NULL) {
+            tokenCount++;
+        }
+
+        if (tokens[0] == NULL) continue;  // Geçersiz komut
+
+        // Yerleşik komutları kontrol et
+        for (int m = 0; m < builtin_sayisi(); m++) {
+            if (strcmp(tokens[0], builtin_komutlar[m]) == 0) {
+                (*builtin_func[m])(tokens);
+                goto next_command;
+            }
+        }
+
+        // Operatörleri kontrol et (<, >, |, &)
+        for (int j = 0; tokens[j] != NULL; j++) {
+            if (strcmp(tokens[j], "<") == 0) {
+                if (tokens[j + 1] == NULL) {
+                    printf("Yeterli Arguman Yok\n");
+                    break;
+                }
+                tokens[j] = NULL;  // '<' işaretini kaldır
+                dosyaInput(tokens, tokens[j + 1]);
+                goto next_command;
+            } else if (strcmp(tokens[j], ">") == 0) {
+                if (tokens[j + 1] == NULL) {
+                    printf("Yeterli Arguman Yok\n");
+                    break;
+                }
+                tokens[j] = NULL;  // '>' işaretini kaldır
+                dosyaOutput(tokens, tokens[j + 1]);
+                goto next_command;
+            } else if (strcmp(tokens[j], "|") == 0) {
+                if (tokens[j + 1] == NULL) {
+                    printf("Pipe Hatası\n");
+                    break;
+                }
+                tokens[j] = NULL;  // '|' işaretini kaldır
+                pipeFonk(tokens, tokens[j + 1], tokens[j + 2]);
+                goto next_command;
+            } else if (strcmp(tokens[j], "&") == 0) {
+                tokens[j] = NULL;  // '&' işaretini kaldır
+                arkaPlandaCalistir(tokens);
+                goto next_command;
+            }
+        }
+
+        // Diğer komutları çalıştır
+        calistir(tokens, 0);
+
+    next_command:
+        continue;
+    }
+
+    return 1;
+}
+
+// Dosyadan giriş almak için kullanılan fonksiyon
+void dosyaInput(char args[], char inputFile)
+{
+	if (strcmp(args[0], "increment") == 0) {
+    	increment(inputFile);
+    	return;
+	}
+
+	pid_t pid;
+	if (!(access (inputFile, F_OK) != -1))  // Dosya mevcut mu kontrol eder
+	{	
+		printf("Hata: %s adinda bir dosya bulunamadi\n", inputFile);
+		return;
+	}
+	int err = -1;
+	int dosya;
+	if ((pid = fork()) == -1)  // Çocuk proses oluşturur
+	{
+		printf("Child olusturulamadi\n");
+		return;
+	}
+	if (pid == 0)
+	{
+		dosya = open(inputFile, O_RDONLY, 0600);  // Dosyayı okuma modunda açar
+		dup2(dosya, STDIN_FILENO);  // Dosya içeriğini stdin'e yönlendirir
+		close(dosya);
+
+		if (execvp(args[0], args) == err)  // Komutu çalıştırır
+		{
+			printf("err");
+			kill(getpid(), SIGTERM);  // Hata durumunda proses sonlandırılır
+		} 
+	}
+	waitpid(pid, NULL, 0);  // Çocuk prosesin bitmesini bekler
+}
+
+// Dosyaya çıkış yazmak için kullanılan fonksiyon
+void dosyaOutput(char args[], char outputFile)
+{
+	pid_t pid;
+	int err = -1;
+	int dosya;
+	
+	if ((pid = fork()) == -1)  // Çocuk proses oluşturur
+	{
+		printf("Child olusturulamadi\n");
+		return;
+	}
+	if (pid == 0)
+	{
+		dosya = open(outputFile, O_CREAT | O_TRUNC | O_WRONLY, 0600);  // Dosyayı yazma modunda açar
+		dup2(dosya, STDOUT_FILENO);  // Standart çıkışı dosyaya yönlendirir
+		close(dosya);
+		if (execvp(args[0], args) == err)  // Komutu çalıştırır
+		{
+			printf("err");
+			kill(getpid(), SIGTERM);  // Hata durumunda proses sonlandırılır
+		} 
+	}
+	else {
+		waitpid(pid, NULL, 0);  // Çocuk prosesin bitmesini bekler
+	}
+}
