@@ -63,3 +63,118 @@ int increment(char *inputFile) {
     printf("%d", number);  // Yeni sayıyı ekrana yazdır
     return 1;
 }
+// cd komutunu işler ve dizini değiştirir
+int cd(char **args)
+{
+        if (args[1] == NULL)  // cd komutu için parametre eksikse hata mesajı verir
+        {
+                fprintf(stderr, ": expected argument to \"cd\"\n");
+        }
+        else
+        {
+                if (chdir(args[1]) != 0)  // chdir ile dizini değiştirir
+                {
+                        perror(":");
+                }
+        }
+        return 1;
+}
+
+// Yardım komutunu işler ve kullanıcıya bilgi verir
+int help(char **args)
+{
+        int i;
+        printf("Isletim Sistemleri Odevi\n");
+        printf("%s\n", "Built_in Komutlar");
+        for (i = 0; i < builtin_sayisi(); i++)  // Yerleşik komutları listeler
+        {
+                printf("  %s\n", builtin_komutlar[i]);
+        }
+        printf("Diger programlar icin 'man' komudunu kullanarak yardım alabilirsiniz.\n");
+        return 1;
+}
+
+// Programdan çıkışı gerçekleştirir
+int quit(char **args)
+{
+        int status;
+        while (!waitpid(-1, &status, WNOHANG)) {}  // Arka planda çalışan çocuk proseslerin bitmesini bekler
+        exit(0);  // Programı sonlandırır
+}
+
+// Pipe komutunu işler ve iki komut arasında veri iletimi sağlar
+void pipeFonk(char *args[], char *komut, char *parametre) {
+    pid_t pid1, pid2;
+    int pipefd[2];
+
+    // Pipe oluşturma
+    if (pipe(pipefd) == -1) {
+        perror("Pipe oluşturulamadı");
+        exit(EXIT_FAILURE);
+    }
+
+    // İlk komutun argümanları
+    char *argv1[] = {args[0], args[1], NULL};
+
+    // İkinci komutun argümanları
+    char *argv2[] = {komut, parametre, NULL};
+
+    // İlk çocuk proses: args komutunu çalıştırır
+    pid1 = fork();
+    if (pid1 == -1) {
+        perror("Fork (1. proses) başarısız");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid1 == 0) {
+        // Pipe'ın yazma ucunu standart çıkışa yönlendir
+        if (dup2(pipefd[1], STDOUT_FILENO) == -1) {
+            perror("dup2 (1. proses) başarısız");
+            exit(EXIT_FAILURE);
+        }
+
+        close(pipefd[0]);  // Pipe'ın okuma ucu kapatılır
+        close(pipefd[1]);  // Pipe'ın yazma ucu kopyalandıktan sonra kapatılır
+
+        // İlk komutu çalıştır
+        execvp(argv1[0], argv1);
+        perror("Birinci komut çalıştırılamadı");
+        exit(EXIT_FAILURE);
+    }
+
+    // İkinci çocuk proses: argv2 komutunu çalıştırır
+    pid2 = fork();
+    if (pid2 == -1) {
+        perror("Fork (2. proses) başarısız");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid2 == 0) {
+        // Pipe'ın okuma ucunu standart girişe yönlendir
+        if (dup2(pipefd[0], STDIN_FILENO) == -1) {
+            perror("dup2 (2. proses) başarısız");
+            exit(EXIT_FAILURE);
+        }
+
+        close(pipefd[1]);  // Pipe'ın yazma ucu kapatılır
+        close(pipefd[0]);  // Pipe'ın okuma ucu kopyalandıktan sonra kapatılır
+
+        // İkinci komutu çalıştır
+        execvp(argv2[0], argv2);
+        perror("İkinci komut çalıştırılamadı");
+        exit(EXIT_FAILURE);
+    }
+
+    // Pipe uçlarını kapat
+    close(pipefd[0]);
+    close(pipefd[1]);
+
+    // Çocuk proseslerin tamamlanmasını bekle
+    if (waitpid(pid1, NULL, 0) == -1) {
+        perror("Birinci proses beklenirken hata oluştu");
+    }
+
+    if (waitpid(pid2, NULL, 0) == -1) {
+        perror("İkinci proses beklenirken hata oluştu");
+    }
+}
