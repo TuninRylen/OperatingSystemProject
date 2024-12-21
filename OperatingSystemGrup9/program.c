@@ -318,3 +318,113 @@ void dosyaOutput(char args[], char outputFile)
 		waitpid(pid, NULL, 0);  // Çocuk prosesin bitmesini bekler
 	}
 }
+// Arka planda bir komut çalıştıran fonksiyon
+int arkaPlandaCalistir(char **args)
+{
+	pid_t pid;
+	int status;
+
+	struct sigaction act;
+	act.sa_handler = sig_chld;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = SA_NOCLDSTOP;
+
+	if (sigaction(SIGCHLD, &act, NULL) < 0)
+	{
+		fprintf(stderr, "sigaction failed\n");
+		return 1;
+	}
+
+	pid = fork();
+	if (pid == 0)
+	{
+		if (execvp(args[0], args) == -1)
+		{
+			printf("Komut bulunamadi");
+			kill(getpid(), SIGTERM);  // Komut bulunamazsa proses sonlandırılır
+		}
+	}
+	else if (pid < 0)
+	{
+		perror("Hata:");
+	}
+	else
+	{
+		printf("Proses PID:%d Degeriyle Olusturuldu", pid);
+	}
+	return 1; 
+}
+
+// Komutları çalıştıran fonksiyon
+int calistir(char **args, int arkaplandaCalisiyorMu)
+{
+	if (arkaplandaCalisiyorMu == 0)
+	{
+		pid_t pid;
+		int status;
+		pid = fork();
+		if (pid == 0)
+		{
+			if (execvp(args[0], args) == -1)
+			{
+				printf("Komut Bulunamadi");
+				kill(getpid(), SIGTERM);
+			}
+		}
+		else if (pid < 0)
+		{
+			perror("Hata:");
+		}
+		else
+		{
+			waitpid(pid, NULL, 0);
+		}
+	}
+	else
+	{
+		arkaPlandaCalistir(args);
+	}
+	return 1; 
+}
+
+// Child proseslerin bitişini işleyen sinyal işleyici
+void sig_chld(int signo) 
+{
+    int status, child_val, chid;
+	chid = waitpid(-1, &status, WNOHANG);
+	if (chid > 0)
+	{
+		if (WIFEXITED(status))
+	    {
+	        child_val = WEXITSTATUS(status);
+	        printf("[%d] retval : %d", chid, child_val);  // Çocuk prosesin dönüş değeri
+	    }
+	}
+}
+
+// Ana fonksiyon, programın çalışmasını başlatır
+int main (int argc, char **argv, char **envp)
+{
+	char line[SATIR];
+	char *tokens[LIMIT];
+	int tokenSayisi;
+	int status = 1;
+	environ = envp;
+
+	system("clear");
+	printf("\n************************* HOSGELDİNİZ *************************\n");
+
+	while (status)
+	{
+    	Prompt();  // Komut istemini gösterir
+    	memset(line, '\0', SATIR);
+    	fgets(line, SATIR, stdin);  // Kullanıcıdan giriş alır
+    	char *trimmedLine = strtok(line, "\n");
+    	if (trimmedLine == NULL) continue;
+
+    	char *commands[1];
+    	commands[0] = trimmedLine;
+
+    	komutYorumla(commands);  // Komutları işler
+	}
+}
