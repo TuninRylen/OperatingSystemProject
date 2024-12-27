@@ -1,3 +1,12 @@
+/*
+(GRUP NO : 9)
+-	B221210063 Uğur Can Çelik  
+-	B221210039 Alperen İsmet Esen
+-	B211210091 Bedirhan Baltık
+-	B221210006 İbrahim Talha Durna
+-	B241210900 Furkan Türel
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -13,28 +22,28 @@
 void Prompt()
 {
 	char hostn[1204] = "";
-	gethostname(hostn, sizeof(hostn));  // Sistemin ana bilgisayar adını alır
-	printf(KNRM "\n%s@%s:"KWHT KBLU "%s > " KWHT, getenv("LOGNAME"), hostn, getcwd(currentDirectory, 1024));  // Kullanıcı adı, host adı ve mevcut dizini gösterir
+	gethostname(hostn, sizeof(hostn));
+	printf(KNRM "\n%s@%s:"KWHT KBLU "%s > " KWHT, getenv("LOGNAME"), hostn, getcwd(currentDirectory, 1024));
 }
 
 // Yerleşik komutların dizisini tanımlar
-char *builtin_komutlar[] = {
-	"cd",  // cd komutu
-	"help",  // help komutu
-	"quit"  // quit komutu
+char *builtin_komutlar[]={
+	"cd",
+	"help",
+	"quit"
 };
 
 // Yerleşik komutların işlevlerini tutan bir dizi
-int (builtin_func[])(char*) = {
-	&cd,  // cd komutunun işlevi
-	&help,  // help komutunun işlevi
-	&quit  // quit komutunun işlevi
+int (*builtin_func[])(char**) = {
+	&cd,
+	&help,
+	&quit
 };
 
 // Yerleşik komut sayısını döndüren fonksiyon
 int builtin_sayisi()
 {
-	return sizeof(builtin_komutlar) / sizeof(char*);
+	return sizeof(builtin_komutlar)/sizeof(char *);
 }
 
 // Bir dosyadaki sayıyı bir artıran fonksiyon
@@ -45,61 +54,62 @@ int increment(char *inputFile) {
     }
 
     char *fileName = inputFile;
-    FILE *file = fopen(fileName, "r");  // Dosyayı okuma modunda açar
+    FILE *file = fopen(fileName, "r");
     if (file == NULL) {
         perror("Dosya açılamadı");
         return 1;
     }
 
     int number;
-    if (fscanf(file, "%d", &number) != 1) {  // Dosyadan bir sayı okur
+    if (fscanf(file, "%d", &number) != 1) {
         fprintf(stderr, "Dosyada geçerli bir sayı yok.\n");
         fclose(file);
         return 1;
     }
     fclose(file);
 
-    number++;  // Sayıyı bir artır
-    printf("%d", number);  // Yeni sayıyı ekrana yazdır
+    number++; // Sayıyı bir artır
+
+    printf("%d", number);
     return 1;
 }
 // cd komutunu işler ve dizini değiştirir
 int cd(char **args)
 {
-        if (args[1] == NULL)  // cd komutu için parametre eksikse hata mesajı verir
-        {
-                fprintf(stderr, ": expected argument to \"cd\"\n");
-        }
-        else
-        {
-                if (chdir(args[1]) != 0)  // chdir ile dizini değiştirir
-                {
-                        perror(":");
-                }
-        }
-        return 1;
+	if (args[1]==NULL)
+	{
+		fprintf(stderr,": expected argument to \"cd\"\n");
+	}
+	else
+	{
+		if (chdir(args[1])!=0)
+		{
+			perror(":");
+		}
+	}
+	return 1;
 }
 
 // Yardım komutunu işler ve kullanıcıya bilgi verir
 int help(char **args)
 {
-        int i;
-        printf("Isletim Sistemleri Odevi\n");
-        printf("%s\n", "Built_in Komutlar");
-        for (i = 0; i < builtin_sayisi(); i++)  // Yerleşik komutları listeler
-        {
-                printf("  %s\n", builtin_komutlar[i]);
-        }
-        printf("Diger programlar icin 'man' komudunu kullanarak yardım alabilirsiniz.\n");
-        return 1;
+	int i;
+	printf("Isletim Sistemleri Odevi\n");
+	printf("%s\n", "Built_in Komutlar");
+	for (i=0;i<builtin_sayisi();i++)
+	{
+		printf("  %s\n",builtin_komutlar[i]);
+	}
+	printf("Diger programlar icin 'man' komudunu kullanarak yardım alabilirsiniz.\n");
+	return 1;
 }
 
 // Programdan çıkışı gerçekleştirir
 int quit(char **args)
 {
-        int status;
-        while (!waitpid(-1, &status, WNOHANG)) {}  // Arka planda çalışan çocuk proseslerin bitmesini bekler
-        exit(0);  // Programı sonlandırır
+	int status;
+	while (!waitpid(-1,&status,WNOHANG)){}
+	exit(0);
 }
 
 // Pipe komutunu işler ve iki komut arasında veri iletimi sağlar
@@ -133,8 +143,8 @@ void pipeFonk(char *args[], char *komut, char *parametre) {
             exit(EXIT_FAILURE);
         }
 
-        close(pipefd[0]);  // Pipe'ın okuma ucu kapatılır
-        close(pipefd[1]);  // Pipe'ın yazma ucu kopyalandıktan sonra kapatılır
+        close(pipefd[0]); // Pipe'ın okuma ucu kapatılır
+        close(pipefd[1]); // Pipe'ın yazma ucu kopyalandıktan sonra kapatılır
 
         // İlk komutu çalıştır
         execvp(argv1[0], argv1);
@@ -156,8 +166,8 @@ void pipeFonk(char *args[], char *komut, char *parametre) {
             exit(EXIT_FAILURE);
         }
 
-        close(pipefd[1]);  // Pipe'ın yazma ucu kapatılır
-        close(pipefd[0]);  // Pipe'ın okuma ucu kopyalandıktan sonra kapatılır
+        close(pipefd[1]); // Pipe'ın yazma ucu kapatılır
+        close(pipefd[0]); // Pipe'ın okuma ucu kopyalandıktan sonra kapatılır
 
         // İkinci komutu çalıştır
         execvp(argv2[0], argv2);
@@ -202,7 +212,7 @@ int komutYorumla(char *args[])
             tokenCount++;
         }
 
-        if (tokens[0] == NULL) continue;  // Geçersiz komut
+        if (tokens[0] == NULL) continue; // Geçersiz komut
 
         // Yerleşik komutları kontrol et
         for (int m = 0; m < builtin_sayisi(); m++) {
@@ -219,7 +229,7 @@ int komutYorumla(char *args[])
                     printf("Yeterli Arguman Yok\n");
                     break;
                 }
-                tokens[j] = NULL;  // '<' işaretini kaldır
+                tokens[j] = NULL; // '<' işaretini kaldır
                 dosyaInput(tokens, tokens[j + 1]);
                 goto next_command;
             } else if (strcmp(tokens[j], ">") == 0) {
@@ -227,7 +237,7 @@ int komutYorumla(char *args[])
                     printf("Yeterli Arguman Yok\n");
                     break;
                 }
-                tokens[j] = NULL;  // '>' işaretini kaldır
+                tokens[j] = NULL; // '>' işaretini kaldır
                 dosyaOutput(tokens, tokens[j + 1]);
                 goto next_command;
             } else if (strcmp(tokens[j], "|") == 0) {
@@ -235,15 +245,17 @@ int komutYorumla(char *args[])
                     printf("Pipe Hatası\n");
                     break;
                 }
-                tokens[j] = NULL;  // '|' işaretini kaldır
+                tokens[j] = NULL; // '|' işaretini kaldır
                 pipeFonk(tokens, tokens[j + 1], tokens[j + 2]);
                 goto next_command;
             } else if (strcmp(tokens[j], "&") == 0) {
-                tokens[j] = NULL;  // '&' işaretini kaldır
+                tokens[j] = NULL; // '&' işaretini kaldır
                 arkaPlandaCalistir(tokens);
                 goto next_command;
             }
         }
+
+
 
         // Diğer komutları çalıştır
         calistir(tokens, 0);
@@ -256,7 +268,7 @@ int komutYorumla(char *args[])
 }
 
 // Dosyadan giriş almak için kullanılan fonksiyon
-void dosyaInput(char args[], char inputFile)
+void dosyaInput(char *args[],char* inputFile)
 {
 	if (strcmp(args[0], "increment") == 0) {
     	increment(inputFile);
@@ -264,60 +276,61 @@ void dosyaInput(char args[], char inputFile)
 	}
 
 	pid_t pid;
-	if (!(access (inputFile, F_OK) != -1))  // Dosya mevcut mu kontrol eder
+	if (!(access (inputFile,F_OK) != -1))
 	{	
-		printf("Hata: %s adinda bir dosya bulunamadi\n", inputFile);
+		printf("Hata: %s adinda bir dosya bulunamadi\n",inputFile);
 		return;
 	}
-	int err = -1;
+	int err=-1;
 	int dosya;
-	if ((pid = fork()) == -1)  // Çocuk proses oluşturur
+	if((pid=fork()) == -1)
 	{
 		printf("Child olusturulamadi\n");
 		return;
 	}
-	if (pid == 0)
+	if (pid==0)
 	{
-		dosya = open(inputFile, O_RDONLY, 0600);  // Dosyayı okuma modunda açar
-		dup2(dosya, STDIN_FILENO);  // Dosya içeriğini stdin'e yönlendirir
+		dosya=open(inputFile, O_RDONLY, 0600);
+		dup2(dosya,STDIN_FILENO);
 		close(dosya);
 
-		if (execvp(args[0], args) == err)  // Komutu çalıştırır
+		if (execvp(args[0],args)==err)	
 		{
 			printf("err");
-			kill(getpid(), SIGTERM);  // Hata durumunda proses sonlandırılır
+			kill(getpid(),SIGTERM);
 		} 
 	}
-	waitpid(pid, NULL, 0);  // Çocuk prosesin bitmesini bekler
+	waitpid(pid,NULL,0);
 }
 
 // Dosyaya çıkış yazmak için kullanılan fonksiyon
-void dosyaOutput(char args[], char outputFile)
+void dosyaOutput(char *args[],char* outputFile)
 {
 	pid_t pid;
-	int err = -1;
+	int err=-1;
 	int dosya;
 	
-	if ((pid = fork()) == -1)  // Çocuk proses oluşturur
+	if((pid=fork()) == -1)
 	{
 		printf("Child olusturulamadi\n");
 		return;
 	}
-	if (pid == 0)
+	if (pid==0)
 	{
-		dosya = open(outputFile, O_CREAT | O_TRUNC | O_WRONLY, 0600);  // Dosyayı yazma modunda açar
-		dup2(dosya, STDOUT_FILENO);  // Standart çıkışı dosyaya yönlendirir
+		dosya=open(outputFile, O_CREAT | O_TRUNC | O_WRONLY, 0600);
+		dup2(dosya,STDOUT_FILENO);
 		close(dosya);
-		if (execvp(args[0], args) == err)  // Komutu çalıştırır
+		if (execvp(args[0],args)==err)	
 		{
 			printf("err");
-			kill(getpid(), SIGTERM);  // Hata durumunda proses sonlandırılır
+			kill(getpid(),SIGTERM);
 		} 
 	}
 	else {
-		waitpid(pid, NULL, 0);  // Çocuk prosesin bitmesini bekler
+		waitpid(pid,NULL,0);
 	}
 }
+
 // Arka planda bir komut çalıştıran fonksiyon
 int arkaPlandaCalistir(char **args)
 {
@@ -329,46 +342,46 @@ int arkaPlandaCalistir(char **args)
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = SA_NOCLDSTOP;
 
-	if (sigaction(SIGCHLD, &act, NULL) < 0)
+	if (sigaction(SIGCHLD,&act,NULL)<0)
 	{
-		fprintf(stderr, "sigaction failed\n");
+		fprintf(stderr,"sigaction failed\n");
 		return 1;
 	}
 
-	pid = fork();
+	pid=fork();
 	if (pid == 0)
 	{
-		if (execvp(args[0], args) == -1)
+		if (execvp(args[0],args) == -1)
 		{
 			printf("Komut bulunamadi");
-			kill(getpid(), SIGTERM);  // Komut bulunamazsa proses sonlandırılır
+			kill(getpid(),SIGTERM);
 		}
 	}
 	else if (pid < 0)
 	{
-		perror("Hata:");
+		perror("Hata:");		
 	}
 	else
 	{
-		printf("Proses PID:%d Degeriyle Olusturuldu", pid);
-	}
+		printf("Proses PID:%d Degeriyle Olusturuldu",pid);
+	}																																												
 	return 1; 
-}
+}																													
 
 // Komutları çalıştıran fonksiyon
-int calistir(char **args, int arkaplandaCalisiyorMu)
+int calistir(char **args,int arkaplandaCalisiyorMu)
 {
-	if (arkaplandaCalisiyorMu == 0)
+	if (arkaplandaCalisiyorMu==0)
 	{
 		pid_t pid;
 		int status;
-		pid = fork();
+		pid=fork();
 		if (pid == 0)
 		{
-			if (execvp(args[0], args) == -1)
+			if (execvp(args[0],args) == -1)
 			{
 				printf("Komut Bulunamadi");
-				kill(getpid(), SIGTERM);
+				kill(getpid(),SIGTERM);
 			}
 		}
 		else if (pid < 0)
@@ -377,7 +390,7 @@ int calistir(char **args, int arkaplandaCalisiyorMu)
 		}
 		else
 		{
-			waitpid(pid, NULL, 0);
+			waitpid(pid,NULL,0);
 		}
 	}
 	else
@@ -390,14 +403,14 @@ int calistir(char **args, int arkaplandaCalisiyorMu)
 // Child proseslerin bitişini işleyen sinyal işleyici
 void sig_chld(int signo) 
 {
-    int status, child_val, chid;
+    int status, child_val,chid;
 	chid = waitpid(-1, &status, WNOHANG);
 	if (chid > 0)
 	{
 		if (WIFEXITED(status))
 	    {
 	        child_val = WEXITSTATUS(status);
-	        printf("[%d] retval : %d", chid, child_val);  // Çocuk prosesin dönüş değeri
+	        printf("[%d] retval : %d",chid, child_val);
 	    }
 	}
 }
@@ -408,23 +421,23 @@ int main (int argc, char **argv, char **envp)
 	char line[SATIR];
 	char *tokens[LIMIT];
 	int tokenSayisi;
-	int status = 1;
-	environ = envp;
+	int status=1;
+	environ=envp;
 
 	system("clear");
 	printf("\n************************* HOSGELDİNİZ *************************\n");
 
 	while (status)
 	{
-    	Prompt();  // Komut istemini gösterir
+    	Prompt();
     	memset(line, '\0', SATIR);
-    	fgets(line, SATIR, stdin);  // Kullanıcıdan giriş alır
+    	fgets(line, SATIR, stdin);
     	char *trimmedLine = strtok(line, "\n");
     	if (trimmedLine == NULL) continue;
 
     	char *commands[1];
     	commands[0] = trimmedLine;
 
-    	komutYorumla(commands);  // Komutları işler
+    	komutYorumla(commands);
 	}
 }
